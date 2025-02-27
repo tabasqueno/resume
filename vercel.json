@@ -14,6 +14,9 @@
       ]
     }
   ],
+  "rewrites": [
+    { "source": "/api/analyze", "destination": "/api/analyze.js" }
+  ],
   "env": {
     "GEMINI_API_KEY": "AIzaSyBCty18c8eAi0sDa-JRT-f5_ZXVWa0nSC8"
   }
