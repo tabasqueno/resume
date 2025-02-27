@@ -5,12 +5,24 @@ const pdfParse = require('pdf-parse');
 // Initialize Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// CORS middleware setup
+// CORS middleware setup with more permissive options
 const corsMiddleware = cors({
   origin: '*', // In production, you should restrict this to your domain
-  methods: ['POST'],
-  allowedHeaders: ['Content-Type']
+  methods: ['POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Origin', 'X-Requested-With', 'Accept'],
+  credentials: true,
+  maxAge: 86400 // 24 hours
 });
+
+// Helper function to add CORS headers directly
+function addCorsHeaders(res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Origin, X-Requested-With, Accept');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
+  return res;
+}
 
 // Helper function to parse PDF buffer
 async function extractTextFromPDF(pdfBuffer) {
@@ -74,7 +86,15 @@ async function analyzeWithGemini(resumeText, jobDescriptionText) {
 
 // Main handler function
 module.exports = async (req, res) => {
-  // Apply CORS middleware
+  // Add CORS headers directly for immediate effect
+  addCorsHeaders(res);
+  
+  // Handle preflight OPTIONS request
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  // Apply CORS middleware for other requests
   await new Promise((resolve, reject) => {
     corsMiddleware(req, res, (result) => {
       if (result instanceof Error) {
