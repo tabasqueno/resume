@@ -6,6 +6,17 @@
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/$1" }
   ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization, X-Requested-With, Accept, Origin" },
+        { "key": "Access-Control-Max-Age", "value": "86400" }
+      ]
+    }
+  ],
   "env": {
     "GEMINI_API_KEY": "AIzaSyBCty18c8eAi0sDa-JRT-f5_ZXVWa0nSC8"
   }
