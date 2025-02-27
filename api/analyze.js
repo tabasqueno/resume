@@ -5,23 +5,20 @@ const pdfParse = require('pdf-parse');
 // Initialize Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// CORS middleware setup with more permissive options
-const corsMiddleware = cors({
-  origin: '*', // In production, you should restrict this to your domain
-  methods: ['POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Origin', 'X-Requested-With', 'Accept'],
-  credentials: true,
-  maxAge: 86400 // 24 hours
-});
-
-// Helper function to add CORS headers directly
-function addCorsHeaders(res) {
+// Simplified direct CORS handling - more reliable than middleware
+function handleCors(req, res) {
+  // Set CORS headers for all responses
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Origin, X-Requested-With, Accept');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
-  return res;
+  
+  // Handle preflight OPTIONS request
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return true; // Indicate that the request has been handled
+  }
+  return false; // Continue with normal request handling
 }
 
 // Helper function to parse PDF buffer
@@ -86,23 +83,10 @@ async function analyzeWithGemini(resumeText, jobDescriptionText) {
 
 // Main handler function
 module.exports = async (req, res) => {
-  // Add CORS headers directly for immediate effect
-  addCorsHeaders(res);
-  
-  // Handle preflight OPTIONS request
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+  // Handle CORS - if it's an OPTIONS request, it will end the response
+  if (handleCors(req, res)) {
+    return; // Response already sent for OPTIONS request
   }
-  
-  // Apply CORS middleware for other requests
-  await new Promise((resolve, reject) => {
-    corsMiddleware(req, res, (result) => {
-      if (result instanceof Error) {
-        return reject(result);
-      }
-      return resolve(result);
-    });
-  });
 
   // Only allow POST requests
   if (req.method !== 'POST') {

@@ -590,9 +590,10 @@
               requestData.resumeText = resumeText.value.trim();
             }
             
-            // Send to API
+            // Send to API with mode: 'cors' explicitly set
             const response = await fetch('https://resume-eta-lime.vercel.app/api/analyze', {
               method: 'POST',
+              mode: 'cors', // Explicitly set CORS mode
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -603,6 +604,7 @@
               throw new Error(`API error: ${response.status}`);
             }
             
+            // Parse JSON safely without eval
             const result = await response.json();
             displayResults(result);
             
@@ -641,7 +643,7 @@
         processRequest();
       }
       
-      // Function to display results
+      // Function to display results - avoiding innerHTML for CSP compliance
       function displayResults(data) {
         const resultsContainer = document.getElementById('results-container');
         const skillsList = document.getElementById('skills-list');
@@ -668,18 +670,35 @@
               skillItem.style.borderLeft = '4px solid #EF4444';
             }
             
-            // Create skill content
-            const skillContent = `
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                <h4 style="font-weight: 600; margin: 0; color: #333;">${skill.skill}</h4>
-                <span style="font-weight: 600; color: ${skill.present ? '#10B981' : '#EF4444'};">
-                  ${skill.present ? 'PRESENT' : 'MISSING'}
-                </span>
-              </div>
-              <p style="margin: 0; font-size: 0.875rem; color: #4B5563;">${skill.explanation}</p>
-            `;
+            // Create skill content using DOM methods instead of innerHTML
+            const headerDiv = document.createElement('div');
+            headerDiv.style.display = 'flex';
+            headerDiv.style.justifyContent = 'space-between';
+            headerDiv.style.alignItems = 'center';
+            headerDiv.style.marginBottom = '0.5rem';
             
-            skillItem.innerHTML = skillContent;
+            const skillTitle = document.createElement('h4');
+            skillTitle.style.fontWeight = '600';
+            skillTitle.style.margin = '0';
+            skillTitle.style.color = '#333';
+            skillTitle.textContent = skill.skill;
+            
+            const statusSpan = document.createElement('span');
+            statusSpan.style.fontWeight = '600';
+            statusSpan.style.color = skill.present ? '#10B981' : '#EF4444';
+            statusSpan.textContent = skill.present ? 'PRESENT' : 'MISSING';
+            
+            headerDiv.appendChild(skillTitle);
+            headerDiv.appendChild(statusSpan);
+            
+            const explanationP = document.createElement('p');
+            explanationP.style.margin = '0';
+            explanationP.style.fontSize = '0.875rem';
+            explanationP.style.color = '#4B5563';
+            explanationP.textContent = skill.explanation;
+            
+            skillItem.appendChild(headerDiv);
+            skillItem.appendChild(explanationP);
             skillsList.appendChild(skillItem);
           });
           
