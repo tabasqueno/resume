@@ -31,9 +31,9 @@ async function analyzeWithGemini(resumeText, jobDescriptionText) {
     ${resumeText}
     
     Task: 
-    1. Identify the top 5-7 most important skills or qualifications from the job description. please limit the skills to 3 words or less. 
-    2. For each skill, determine if the resume demonstrates this skill (YES or NO).
-    3. For each skill, provide a brief explanation of why you determined YES or NO.
+    1. Extract exactly 5 most frequently mentioned technical skills from the job description.
+    2. For each skill, determine if the resume explicitly demonstrates this skill (YES or NO).
+    3. Use only exact keyword matches to determine presence.
     
     Return your analysis in the following JSON format only, with no additional text:
     {
