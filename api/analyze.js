@@ -33,7 +33,7 @@ async function analyzeWithGemini(resumeText, jobDescriptionText) {
     Task: 
     1. Extract exactly 5 most frequently mentioned technical skills from the job description.
     2. For each skill, determine if the resume explicitly demonstrates this skill (YES or NO).
-    3. Use only exact keyword matches to determine presence.
+    3. Use only exact or similar keyword matches to determine presence.
     
     Return your analysis in the following JSON format only, with no additional text:
     {
