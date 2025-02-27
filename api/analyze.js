@@ -1,3 +1,4 @@
+// api/analyze.js
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const cors = require('cors');
 const pdfParse = require('pdf-parse');
@@ -5,21 +6,14 @@ const pdfParse = require('pdf-parse');
 // Initialize Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Simplified direct CORS handling - more reliable than middleware
-function handleCors(req, res) {
-  // Set CORS headers for all responses
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Origin, X-Requested-With, Accept');
-  res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
-  
-  // Handle preflight OPTIONS request
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return true; // Indicate that the request has been handled
-  }
-  return false; // Continue with normal request handling
-}
+// Create a middleware function for CORS handling
+const corsMiddleware = cors({
+  origin: '*', // Allow requests from any origin
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Origin', 'X-Requested-With', 'Accept'],
+  credentials: true,
+  maxAge: 86400 // 24 hours
+});
 
 // Helper function to parse PDF buffer
 async function extractTextFromPDF(pdfBuffer) {
@@ -83,9 +77,19 @@ async function analyzeWithGemini(resumeText, jobDescriptionText) {
 
 // Main handler function
 module.exports = async (req, res) => {
-  // Handle CORS - if it's an OPTIONS request, it will end the response
-  if (handleCors(req, res)) {
-    return; // Response already sent for OPTIONS request
+  // Apply CORS middleware
+  await new Promise((resolve, reject) => {
+    corsMiddleware(req, res, (result) => {
+      if (result instanceof Error) {
+        return reject(result);
+      }
+      return resolve(result);
+    });
+  });
+
+  // For OPTIONS requests, we're done - the CORS middleware has set headers
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
   // Only allow POST requests
