@@ -119,7 +119,7 @@ module.exports = async (req, res) => {
     // Return the analysis
     return res.status(200).json(analysis);
   } catch (error) {
-    console.error('Error processing request:', error);
+    console.error('Error processin request:', error);
     return res.status(500).json({ error: error.message || 'Internal server error' });
   }
 };
