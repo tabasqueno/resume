@@ -36,3 +36,6 @@ yarn-error.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Frontend file (not to be included in Vercel deployment)
+index.html
