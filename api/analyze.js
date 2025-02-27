@@ -31,7 +31,7 @@ async function analyzeWithGemini(resumeText, jobDescriptionText) {
     ${resumeText}
     
     Task: 
-    1. Identify the top 5-7 most important skills or qualifications from the job description.
+    1. Identify the top 5-7 most important skills or qualifications from the job description. please limit the skills to 3 words or less. 
     2. For each skill, determine if the resume demonstrates this skill (YES or NO).
     3. For each skill, provide a brief explanation of why you determined YES or NO.
     
