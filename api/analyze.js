@@ -1,19 +1,9 @@
 // api/analyze.js
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const cors = require('cors');
 const pdfParse = require('pdf-parse');
 
 // Initialize Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-// Create a middleware function for CORS handling
-const corsMiddleware = cors({
-  origin: '*', // Allow requests from any origin
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Origin', 'X-Requested-With', 'Accept'],
-  credentials: true,
-  maxAge: 86400 // 24 hours
-});
 
 // Helper function to parse PDF buffer
 async function extractTextFromPDF(pdfBuffer) {
@@ -77,17 +67,13 @@ async function analyzeWithGemini(resumeText, jobDescriptionText) {
 
 // Main handler function
 module.exports = async (req, res) => {
-  // Apply CORS middleware
-  await new Promise((resolve, reject) => {
-    corsMiddleware(req, res, (result) => {
-      if (result instanceof Error) {
-        return reject(result);
-      }
-      return resolve(result);
-    });
-  });
+  // Set CORS headers manually on all responses
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
 
-  // For OPTIONS requests, we're done - the CORS middleware has set headers
+  // Handle the OPTIONS preflight request
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -119,7 +105,7 @@ module.exports = async (req, res) => {
     // Return the analysis
     return res.status(200).json(analysis);
   } catch (error) {
-    console.error('Error processin request:', error);
+    console.error('Error processing request:', error);
     return res.status(500).json({ error: error.message || 'Internal server error' });
   }
 };
