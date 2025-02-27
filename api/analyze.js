@@ -89,7 +89,7 @@ module.exports = async (req, res) => {
     // Validate inputs
     if ((!resumeText && !resumePdfBase64) || !jobDescription) {
       return res.status(400).json({ 
-        error: 'Missing required fields. Please provide either resumeText or resumePdfBase64, and jobDescription.' 
+        error: 'Missing required field. Please provide either resumeText or resumePdfBase64, and jobDescription.' 
       });
     }
 
