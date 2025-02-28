@@ -1,58 +1,57 @@
 // api/analyze.js
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const pdfParse = require('pdf-parse');
 
 // Initialize Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Helper function to parse PDF buffer
-async function extractTextFromPDF(pdfBuffer) {
-  try {
-    const data = await pdfParse(Buffer.from(pdfBuffer, 'base64'));
-    return data.text;
-  } catch (error) {
-    console.error('Error parsing PDF:', error);
-    throw new Error('Failed to parse PDF file');
-  }
-}
-
-// Helper function to analyze with Gemini
-async function analyzeWithGemini(resumeText, jobDescriptionText) {
+// Function to directly process PDF with Gemini multimodal
+async function analyzeWithGeminiMultimodal(pdfBuffer, jobDescriptionText) {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    
+    // Create parts for multimodal input
+    const pdfPart = {
+      inlineData: {
+        data: pdfBuffer,
+        mimeType: "application/pdf"
+      }
+    };
+    
+    const textPart = {
+      text: `
+      You are a professional resume analyzer. I will provide you with a job description and a resume PDF.
 
-    const prompt = `
-    You are a professional resume analyzer. I will provide you with a job description and a resume.
+      JOB DESCRIPTION:
+      ${jobDescriptionText}
 
-    JOB DESCRIPTION:
-    ${jobDescriptionText}
+      RESUME:
+      The resume is provided as a PDF file. Please analyze its entire content carefully.
 
-    RESUME:
-    ${resumeText}
+      Task: 
+      1. Be consistent in your analysis.
+      2. Extract exactly 10 most frequently mentioned skills from the job description.
+      3. For each skill, determine if the resume explicitly demonstrates this skill (YES or NO).
+      4. Use only exact or similar keyword matches to determine presence.
 
-    Task: 
-    1. be consistent in your analysis.
-    2. Extract exactly 10 most frequently mentioned technical skills from the job description.
-    3. For each skill, determine if the resume explicitly demonstrates this skill (YES or NO).
-    4. Use only exact or similar keyword matches to determine presence.
-
-    Return your analysis in the following JSON format only, with no additional text:
-    {
-      "skills": [
-        {
-          "skill": "Skill name",
-          "present": true/false,
-          "explanation": "Brief explanation"
-        },
-        ...
-      ]
-    }
-    `;
-
-    const result = await model.generateContent(prompt);
+      Return your analysis in the following JSON format only, with no additional text:
+      {
+        "skills": [
+          {
+            "skill": "Skill name",
+            "present": true/false,
+            "explanation": "Brief explanation"
+          },
+          ...
+        ]
+      }
+      `
+    };
+    
+    // Generate content with multimodal input
+    const result = await model.generateContent([pdfPart, textPart]);
     const response = await result.response;
     const text = response.text();
-
+    
     // Extract JSON from the response
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
@@ -61,8 +60,8 @@ async function analyzeWithGemini(resumeText, jobDescriptionText) {
       throw new Error('Failed to parse Gemini response');
     }
   } catch (error) {
-    console.error('Error analyzing with Gemini:', error);
-    throw new Error('Failed to analyze with Gemini');
+    console.error('Error analyzing with Gemini multimodal:', error);
+    throw new Error('Failed to analyze with Gemini multimodal: ' + error.message);
   }
 }
 
@@ -71,6 +70,7 @@ module.exports = async (req, res) => {
   if (req.method === 'GET') {
     return res.status(200).json({ message: 'Analyze endpoint is working' });
   }
+  
   // Set CORS headers manually on all responses
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -88,23 +88,17 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { resumeText, resumePdfBase64, jobDescription } = req.body;
+    const { resumePdfBase64, jobDescription } = req.body;
 
     // Validate inputs
-    if ((!resumeText && !resumePdfBase64) || !jobDescription) {
+    if (!resumePdfBase64 || !jobDescription) {
       return res.status(400).json({ 
-        error: 'Missing required field. Please provide either resumeText or resumePdfBase64, and jobDescription.' 
+        error: 'Missing required field. Please provide both resumePdfBase64 and jobDescription.' 
       });
     }
 
-    // Extract text from PDF if provided
-    let finalResumeText = resumeText;
-    if (!resumeText && resumePdfBase64) {
-      finalResumeText = await extractTextFromPDF(resumePdfBase64);
-    }
-
-    // Analyze with Gemini
-    const analysis = await analyzeWithGemini(finalResumeText, jobDescription);
+    // Analyze with Gemini multimodal
+    const analysis = await analyzeWithGeminiMultimodal(resumePdfBase64, jobDescription);
 
     // Return the analysis
     return res.status(200).json(analysis);
